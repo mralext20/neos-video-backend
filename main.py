@@ -1,6 +1,7 @@
 from sanic import Sanic
 from sanic.response import text
 
+from datetime import datetime
 import neosutils
 import videoSources
 import youtube
@@ -30,9 +31,10 @@ async def search(request, searchTerm):
 
 @app.route(f"{baseurl}/update")
 async def update(request):
+    then = datetime.now()
     for playlistId in videoSources.youtubePlaylists:
         youtube.getPlaylist(playlistId)
-    return
+    return text(f"Success, took {datetime.now() - then}")
 
 
 if __name__ == "__main__":
