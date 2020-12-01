@@ -14,19 +14,28 @@ app = Sanic("hello_example")
 @app.route(f"{baseurl}/all.txt")
 async def all(request):
     videos = Video.select().order_by(Video.publishDate.desc())
-    videos = [[v.title, v.vidId, v.channel, v.description, v.thumbnail, v.publishDate.timestamp()] for v in videos]
-    # videos.sort(key=lambda a: a[5], reverse=True)
-    ret = neosutils.formatForNeos(videos)
-    return text(ret)
+    return processVideos(videos)
 
 
 @app.route(f"{baseurl}/search/<searchTerm:string>")
 async def search(request, searchTerm):
     matches = Video.select().where((Video.title.contains(searchTerm)) | (Video.description.contains(searchTerm)))
+    return processVideos(matches)
+
+
+def processVideos(matches):
     videos = [[v.title, v.vidId, v.channel, v.description, v.thumbnail, v.publishDate.timestamp()] for v in matches]
-    # videos.sort(key=lambda a: a[5], reverse=True)
     ret = neosutils.formatForNeos(videos)
     return text(ret)
+
+
+@app.route(f"{baseurl}/related/<videoId:string>")
+async def related(request, videoId):
+    source = Video.get(Video.vidId == videoId)
+    videos = youtube.extractVideosFromDesc(source.description)
+    matches = Video.select().where((Video.vidId << videos) | (Video.description.contains(videoId)))
+    matches = [match for match in matches if match.vidId != videoId]
+    return processVideos(matches)
 
 
 @app.route(f"{baseurl}/update")

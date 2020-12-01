@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 import requests
@@ -50,3 +51,12 @@ def processItems(items):
                 v.thumbnail = snip['thumbnails']['default']['url']
             v.save()
             print(f"{action} video id {vid}")
+
+
+ytLinkRegex = re.compile(r'((http(s)?://)?)(www.)?((youtube.com/)|(youtu.be/))([\S]+)')
+
+
+def extractVideosFromDesc(description) -> list:
+    matches = ytLinkRegex.findall(description)
+    ids = [i[7] for i in matches]
+    return ids
