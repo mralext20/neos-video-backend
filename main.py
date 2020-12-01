@@ -32,9 +32,10 @@ async def search(request, searchTerm):
 @app.route(f"{baseurl}/update")
 async def update(request):
     then = datetime.now()
+    total = 0
     for playlistId in videoSources.youtubePlaylists:
-        youtube.getPlaylist(playlistId)
-    return text(f"Success, took {datetime.now() - then}")
+        total += youtube.getPlaylist(playlistId)
+    return text(f"Success, took {datetime.now() - then} to retrieve {total} items")
 
 
 if __name__ == "__main__":
