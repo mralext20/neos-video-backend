@@ -38,6 +38,11 @@ async def related(request, videoId):
     return processVideos(matches)
 
 
+@app.route(f"{baseurl}/info/<videoId:string>")
+async def info(request, videoId):
+    source = Video.get(Video.vidId == videoId)
+    return processVideos([source])
+
 @app.route(f"{baseurl}/update")
 async def update(request):
     then = datetime.now()
