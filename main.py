@@ -68,6 +68,7 @@ async def update(request):
     """
     then = datetime.now()
     total = 0
+    Video.delete().execute()  # delete all existing videos
     for playlistId in videoSources.youtubePlaylists:
         total += youtube.getPlaylist(playlistId)
     return text(f"Success, took {datetime.now() - then} to retrieve {total} items")
