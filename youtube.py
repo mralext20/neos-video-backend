@@ -40,7 +40,7 @@ def processItems(items):
                     title=snip['title'],
                     description=snip['description'],
                     channel=snip['channelTitle'],
-                    thumbnail=snip['thumbnails']['default']['url'],
+                    thumbnail=snip['thumbnails']['high']['url'],
                     publishDate=datetime.strptime(snip['publishedAt'], "%Y-%m-%dT%H:%M:%SZ")
                 )
             else:
@@ -48,7 +48,7 @@ def processItems(items):
                 v.title = snip['title']
                 v.description = snip['description']
                 v.channel = snip['channelTitle']
-                v.thumbnail = snip['thumbnails']['default']['url']
+                v.thumbnail = snip['thumbnails']['high']['url']
             v.save()
             print(f"{action} video id {vid}")
 
