@@ -1,5 +1,5 @@
 from sanic import Sanic
-from sanic.response import text
+from sanic.response import text, json
 
 from datetime import datetime
 import neosutils
@@ -17,7 +17,7 @@ async def all(request):
     returns all videos from the database as a single string.
     """
     videos = Video.select().order_by(Video.publishDate.desc())
-    return processVideos(videos)
+    return processVideos(videos, request)
 
 
 @app.route(f"{baseurl}/search/<searchTerm:string>")
@@ -26,18 +26,35 @@ async def search(request, searchTerm):
     search through the database for any videos that contain the search term, in either their title or description.
     """
     matches = Video.select().where((Video.title.contains(searchTerm)) | (Video.description.contains(searchTerm)))
-    return processVideos(matches)
+    return processVideos(matches, request)
 
 
-def processVideos(matches):
+def processVideos(data, req):
     """
     simple connector method to take a result from peewee and return the text to send back on the webclient
-    :param matches: a result from peewee.
-    :return: text type object for return by sanic
+    :param req: the original request. will be used to style the response appropriately
+    :param data: series of videos.
+    :return: response for sanic
     """
-    videos = [[v.title, v.vidId, v.channel, v.description, v.thumbnail, v.publishDate.timestamp()] for v in matches]
-    ret = neosutils.formatForNeos(videos)
-    return text(ret)
+    style= {'v':1, 'format':'JSON'}
+    params =  {k[0]:k[1] for k in req.query_args}
+    if 'Neos' in req.headers['user-agent'] or params.get('format') == 'Neos':
+        style['format'] = 'neos'
+    if params.get('format') == 'JSON':
+        style['format'] = 'JSON'
+    if params.get('v') == '2':
+        style['v'] = 2
+
+    if style['v'] == 1 or style['v'] is None:
+        videos = [[v.title, v.vidId, v.channel, v.description, v.thumbnail, v.publishDate.timestamp()] for v in data]
+    else:
+        # style['v'] == 2:
+        videos = [[v.title, v.vidId, v.channel, v.description, v.thumbnail, v.publishDate.timestamp(), v.duration] for v in data]
+
+    if style['format'] == 'neos':
+        return text(neosutils.formatForNeos(videos))
+    else:
+        return json(videos)
 
 
 @app.route(f"{baseurl}/related/<videoId:string>")
@@ -50,7 +67,7 @@ async def related(request, videoId):
     videos = youtube.extractVideosFromDesc(source.description)
     matches = Video.select().where((Video.vidId << videos) | (Video.description.contains(videoId)))
     matches = [match for match in matches if match.vidId != videoId]
-    return processVideos(matches)
+    return processVideos(matches, request)
 
 
 @app.route(f"{baseurl}/info/<videoId:string>")
@@ -59,7 +76,7 @@ async def info(request, videoId):
     given a video, return its data
     """
     source = Video.get(Video.vidId == videoId)
-    return processVideos([source])
+    return processVideos([source], request)
 
 @app.route(f"{baseurl}/update")
 async def update(request):
