@@ -2,11 +2,14 @@ import re
 from datetime import datetime
 
 import requests
+from isodate import parse_duration
 
 import config
 from models import Video, database
 
-baseParams = {'part': ['snippet'], 'maxResults': 50, 'key': config.googleApiKey}
+BASEPARAMS = {'key': config.googleApiKey}
+PLAYLISTPARAMS = {**BASEPARAMS, 'part': ['snippet', 'contentDetails'], 'maxResults': 50}
+VIDEOSPARAMS = {**BASEPARAMS, 'part': ['contentDetails']}
 
 
 def getPlaylist(playlistID, nextPageToken=""):
@@ -14,7 +17,7 @@ def getPlaylist(playlistID, nextPageToken=""):
 
     res = requests.get(
         "https://www.googleapis.com/youtube/v3/playlistItems",
-        params={**baseParams, 'playlistId': playlistID, "pageToken": nextPageToken},
+        params={**PLAYLISTPARAMS, 'playlistId': playlistID, "pageToken": nextPageToken},
     )
     res.raise_for_status()
 
@@ -27,30 +30,54 @@ def getPlaylist(playlistID, nextPageToken=""):
     return actions
 
 
+def prettyData(items):
+    res = requests.get(
+        "https://www.googleapis.com/youtube/v3/videos",
+        params={**VIDEOSPARAMS, 'id': ','.join([i['contentDetails']['videoId'] for i in items])}
+    )
+    res.raise_for_status()
+    data = res.json()
+    durations = {i['id']: i['contentDetails']['duration'] for i in data['items']}
+    ret = []
+    for i in items:
+        snip = i['snippet']
+        ret.append({
+            'title': snip['title'],
+            'vidId': i['contentDetails']['videoId'],
+            'thumbnail': snip['thumbnails']['medium']['url'],
+            'channel': snip['channelTitle'],
+            'description': snip['description'],
+            'publishDate': datetime.strptime(snip['publishedAt'], "%Y-%m-%dT%H:%M:%SZ"),
+            'duration': parse_duration(durations[i['contentDetails']['videoId']]).seconds
+        })
+    return ret
+
+
 def processItems(items):
+    items = prettyData(items)
     with database.atomic():
         for i in items:
-            snip = i['snippet']
-            vid = snip['resourceId']['videoId']
-            v = Video.get_or_none(Video.vidId == vid)
+            v = Video.get_or_none(Video.vidId == i['vidId'])
             if v is None:
                 action = "saving"
                 v = Video(
-                    vidId=vid,
-                    title=snip['title'],
-                    description=snip['description'],
-                    channel=snip['channelTitle'],
-                    thumbnail=snip['thumbnails']['high']['url'],
-                    publishDate=datetime.strptime(snip['publishedAt'], "%Y-%m-%dT%H:%M:%SZ")
+                    vidId=i['vidId'],
+                    title=i['title'],
+                    description=i['description'],
+                    channel=i['channel'],
+                    thumbnail=i['thumbnail'],
+                    publishDate=i['publishDate'],
+                    duration=i['duration']
                 )
             else:
                 action = "updated"
-                v.title = snip['title']
-                v.description = snip['description']
-                v.channel = snip['channelTitle']
-                v.thumbnail = snip['thumbnails']['high']['url']
+                v.title = i['title']
+                v.description = i['description']
+                v.channel = i['channel']
+                v.thumbnail = i['thumbnail']
+                v.duration = i['duration']
             v.save()
-            print(f"{action} video id {vid}")
+            print(f"{action} video id {i['vidId']}, {i['title']}")
 
 
 ytLinkRegex = re.compile(r'((http(s)?://)?)(www.)?((youtube.com/)|(youtu.be/))([\S]+)')

@@ -10,6 +10,7 @@ class Video(Model):
     channel = CharField()
     publishDate = DateTimeField()
     thumbnail = CharField()
+    duration = IntegerField()
 
     class Meta:
         database = database
