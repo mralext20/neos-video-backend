@@ -36,8 +36,9 @@ def processVideos(data, req):
     :param data: series of videos.
     :return: response for sanic
     """
-    style= {'v':1, 'format':'JSON'}
-    params =  {k[0]:k[1] for k in req.query_args}
+    style= {'v':1, 'format': 'JSON'}
+    defaultParams = {'page': '1', 'pageLength': '1000'}
+    params = {**defaultParams, **{k[0]:k[1] for k in req.query_args}}
     if 'Neos' in req.headers['user-agent'] or params.get('format') == 'Neos':
         style['format'] = 'neos'
     if params.get('format') == 'JSON':
@@ -51,10 +52,14 @@ def processVideos(data, req):
         # style['v'] == 2:
         videos = [[v.title, v.vidId, v.channel, v.description, v.thumbnail, v.publishDate.timestamp(), v.duration] for v in data]
 
+    start = (int(params['page'])-1) * int(params['pageLength'])
+    end = start + int(params['pageLength'])
+    slice = videos[start:end]
+
     if style['format'] == 'neos':
-        return text(neosutils.formatForNeos(videos))
+        return text(neosutils.formatForNeos(slice))
     else:
-        return json(videos)
+        return json(slice)
 
 
 @app.route(f"{baseurl}/related/<videoId:string>")
