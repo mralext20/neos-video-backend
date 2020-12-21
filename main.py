@@ -1,9 +1,10 @@
+import asyncio
+
 from sanic import Sanic
 from sanic.response import text, json
 
 from datetime import datetime
-import neosutils
-import videoSources
+import utils
 import youtube
 from config import baseurl
 from models import Video
@@ -54,12 +55,12 @@ def processVideos(data, req):
 
     start = (int(params['page'])-1) * int(params['pageLength'])
     end = start + int(params['pageLength'])
-    slice = videos[start:end]
+    videos = videos[start:end]
 
     if style['format'] == 'neos':
-        return text(neosutils.formatForNeos(slice))
+        return text(utils.formatForNeos(videos))
     else:
-        return json(slice)
+        return json(videos)
 
 
 @app.route(f"{baseurl}/related/<videoId:string>")
@@ -83,17 +84,20 @@ async def info(request, videoId):
     source = Video.get(Video.vidId == videoId)
     return processVideos([source], request)
 
+
 @app.route(f"{baseurl}/update")
 async def update(request):
     """
     request the database be updated with the latest information from the playlists in `videoSources.py`
     """
     then = datetime.now()
-    total = 0
-    Video.delete().execute()  # delete all existing videos
-    for playlistId in videoSources.youtubePlaylists:
-        total += youtube.getPlaylist(playlistId)
+    total = youtube.update()
     return text(f"Success, took {datetime.now() - then} to retrieve {total} items")
+
+
+@app.listener("before_server_start")
+async def startup(app, loop: asyncio.ProactorEventLoop):
+    await utils.periodic(24 * 60 * 60)(youtube.update)()  # now do that every day
 
 
 if __name__ == "__main__":

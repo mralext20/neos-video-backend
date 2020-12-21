@@ -1,10 +1,11 @@
 import re
 from datetime import datetime
 
-import requests
+import aiohttp
 from isodate import parse_duration
 
 import config
+import videoSources
 from models import Video, database
 
 BASEPARAMS = {'key': config.googleApiKey}
@@ -12,31 +13,33 @@ PLAYLISTPARAMS = {**BASEPARAMS, 'part': ['snippet', 'contentDetails'], 'maxResul
 VIDEOSPARAMS = {**BASEPARAMS, 'part': ['contentDetails']}
 
 
-def getPlaylist(playlistID, nextPageToken=""):
+async def getPlaylist(playlistID, nextPageToken="", session=aiohttp.ClientSession()):
     actions = 0
 
-    res = requests.get(
-        "https://www.googleapis.com/youtube/v3/playlistItems",
-        params={**PLAYLISTPARAMS, 'playlistId': playlistID, "pageToken": nextPageToken},
-    )
-    res.raise_for_status()
+    async with session.get("https://www.googleapis.com/youtube/v3/playlistItems",
+                           params={
+                               **PLAYLISTPARAMS,
+                               'playlistId': playlistID,
+                               'pageToken': nextPageToken
+                           }
+                           ) as response:
+        data = await response.json()
 
-    data = res.json()
-    processItems(data['items'])
+    await processItems(data['items'], session)
     actions += len(data['items'])
     if 'nextPageToken' in data:
-        actions += getPlaylist(playlistID, data['nextPageToken'])
-    print(res)
+        actions += await getPlaylist(playlistID, data['nextPageToken'], session)
     return actions
 
 
-def prettyData(items):
-    res = requests.get(
-        "https://www.googleapis.com/youtube/v3/videos",
-        params={**VIDEOSPARAMS, 'id': ','.join([i['contentDetails']['videoId'] for i in items])}
-    )
-    res.raise_for_status()
-    data = res.json()
+async def prettyData(items, session):
+
+
+    async with session.get("https://www.googleapis.com/youtube/v3/videos",
+                            params={**VIDEOSPARAMS, 'id': ','.join([i['contentDetails']['videoId'] for i in items])}
+                          ) as response:
+        data = await response.json()
+
     durations = {i['id']: i['contentDetails']['duration'] for i in data['items']}
     ret = []
     for i in items:
@@ -53,8 +56,8 @@ def prettyData(items):
     return ret
 
 
-def processItems(items):
-    items = prettyData(items)
+async def processItems(items, session):
+    items = await prettyData(items, session)
     with database.atomic():
         for i in items:
             v = Video.get_or_none(Video.vidId == i['vidId'])
@@ -77,7 +80,7 @@ def processItems(items):
                 v.thumbnail = i['thumbnail']
                 v.duration = i['duration']
             v.save()
-            print(f"{action} video id {i['vidId']}, {i['title']}")
+            # print(f"{action} video id {i['vidId']}, {i['title']}")
 
 
 ytLinkRegex = re.compile(r'((http(s)?://)?)(www.)?((youtube.com/)|(youtu.be/))([\S]+)')
@@ -87,3 +90,14 @@ def extractVideosFromDesc(description) -> list:
     matches = ytLinkRegex.findall(description)
     ids = [i[7] for i in matches]
     return ids
+
+
+async def update() -> int:
+    """updates database with newest videos from all playlists. also clears videos no longer part of the playlists"""
+    total = 0
+    with database.atomic():
+        Video.delete().execute()  # delete all existing videos
+        async with aiohttp.ClientSession() as session:
+            for playlistId in videoSources.youtubePlaylists:
+                total += await getPlaylist(playlistId, session=session)
+    return total
