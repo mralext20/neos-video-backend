@@ -95,7 +95,7 @@ async def update(request):
     return text(f"Success, took {datetime.now() - then} to retrieve {total} items")
 
 
-@app.listener("before_server_start")
+@app.listener("after_server_start")
 async def startup(app, loop):
     await utils.periodic(24 * 60 * 60)(youtube.update)()  # now do that every day
 
