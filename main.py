@@ -96,7 +96,7 @@ async def update(request):
 
 
 @app.listener("before_server_start")
-async def startup(app, loop: asyncio.ProactorEventLoop):
+async def startup(app, loop):
     await utils.periodic(24 * 60 * 60)(youtube.update)()  # now do that every day
 
 
