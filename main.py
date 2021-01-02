@@ -91,7 +91,7 @@ async def update(request):
     request the database be updated with the latest information from the playlists in `videoSources.py`
     """
     then = datetime.now()
-    total = youtube.update()
+    total = await youtube.update()
     return text(f"Success, took {datetime.now() - then} to retrieve {total} items")
 
 
