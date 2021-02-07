@@ -1,13 +1,14 @@
-import asyncio
+from datetime import datetime
+from typing import List
 
 from sanic import Sanic
-from sanic.response import text, json
+from sanic.request import Request
+from sanic.response import json, text
 
-from datetime import datetime
+import database as db
 import utils
 import youtube
 from config import baseurl
-from models import Video
 
 app = Sanic(name="Neos Video Backend")
 
@@ -17,45 +18,37 @@ async def all(request):
     """
     returns all videos from the database as a single string.
     """
-    videos = Video.select().order_by(Video.publishDate.desc())
+    videos = await db.getAllVideos()
     return processVideos(videos, request)
 
 
 @app.route(f"{baseurl}/search/<searchTerm:string>")
-async def search(request, searchTerm):
+async def search(request, searchTerm: str):
     """
     search through the database for any videos that contain the search term, in either their title or description.
     """
-    matches = Video.select().where((Video.title.contains(searchTerm)) | (Video.description.contains(searchTerm)))
+    matches = await db.search(searchTerm)
     return processVideos(matches, request)
 
 
-def processVideos(data, req):
+def processVideos(videos: List[db.Video], req: Request):
     """
     simple connector method to take a result from peewee and return the text to send back on the webclient
     :param req: the original request. will be used to style the response appropriately
     :param data: series of videos.
     :return: response for sanic
     """
-    style= {'v':1, 'format': 'JSON'}
-    defaultParams = {'page': '1', 'pageLength': '1000'}
-    params = {**defaultParams, **{k[0]:k[1] for k in req.query_args}}
+    style = {'format': 'JSON'}
+    DEFAULTPARAMS = {'page': '1', 'pageLength': '1000'}
+    params = {**DEFAULTPARAMS, **{k[0]: k[1] for k in req.query_args}}
     if 'Neos' in req.headers['user-agent'] or params.get('format') == 'Neos':
         style['format'] = 'neos'
     if params.get('format') == 'JSON':
         style['format'] = 'JSON'
-    if params.get('v') == '2':
-        style['v'] = 2
 
-    if style['v'] == 1 or style['v'] is None:
-        videos = [[v.title, v.vidId, v.channel, v.description, v.thumbnail, v.publishDate.timestamp()] for v in data]
-    else:
-        # style['v'] == 2:
-        videos = [[v.title, v.vidId, v.channel, v.description, v.thumbnail, v.publishDate.timestamp(), v.duration] for v in data]
-
-    start = (int(params['page'])-1) * int(params['pageLength'])
+    start = (int(params['page']) - 1) * int(params['pageLength'])
     end = start + int(params['pageLength'])
-    videos = videos[start:end]
+    videos = [v.as_tuple for v in videos][start:end]
 
     if style['format'] == 'neos':
         return text(utils.formatForNeos(videos))
@@ -64,24 +57,20 @@ def processVideos(data, req):
 
 
 @app.route(f"{baseurl}/related/<videoId:string>")
-async def related(request, videoId):
+async def related(request: Request, videoId: str):
     """
     given a videoId, return any video in the database that the video given mentioned in its description,
     and also any video in the database that mentions the given video
     """
-    source = Video.get(Video.vidId == videoId)
-    videos = youtube.extractVideosFromDesc(source.description)
-    matches = Video.select().where((Video.vidId << videos) | (Video.description.contains(videoId)))
-    matches = [match for match in matches if match.vidId != videoId]
-    return processVideos(matches, request)
+    return processVideos(await (await db.getVideoById(videoId)).get_related_videos(), request)
 
 
 @app.route(f"{baseurl}/info/<videoId:string>")
-async def info(request, videoId):
+async def info(request, videoId: str):
     """
     given a video, return its data
     """
-    source = Video.get(Video.vidId == videoId)
+    source = await db.getVideoById(videoId)
     return processVideos([source], request)
 
 
@@ -97,7 +86,8 @@ async def update(request):
 
 @app.listener("after_server_start")
 async def startup(app, loop):
-    await utils.periodic(24 * 60 * 60)(youtube.update)()  # now do that every day
+    await db.start()
+    await utils.periodic(24 * 60 * 60)(youtube.update)()  # update data every day
 
 
 if __name__ == "__main__":
