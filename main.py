@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List
 
+from config import baseurl
 from sanic import Sanic
 from sanic.request import Request
 from sanic.response import json, text
@@ -8,7 +9,6 @@ from sanic.response import json, text
 import database as db
 import utils
 import youtube
-from config import baseurl
 
 app = Sanic(name="Neos Video Backend")
 

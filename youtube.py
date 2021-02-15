@@ -3,9 +3,9 @@ from datetime import datetime
 from typing import List
 
 import aiohttp
+import config
 from isodate import parse_duration
 
-import config
 import database as db
 import videoSources
 from utils import grouper
