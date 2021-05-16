@@ -23,7 +23,7 @@ def formatForNeos(list: Iterable[Iterable]) -> str:
 
 
 def periodic(period):
-    """from https://stackoverflow.com/a/53293518 """
+    """from https://stackoverflow.com/a/53293518"""
 
     def scheduler(fcn):
         async def wrapper(*args, **kwargs):
