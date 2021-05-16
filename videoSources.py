@@ -7,4 +7,5 @@ youtubePlaylists = [
     "PLFYjCoKo3ivA67rj20lIsmUG2AQoavYHG",  # Alex Drypy Avali
     "PLwitPMCdx0xu2KQ7vwoccaPUp-31qfdjK",  # Turk
     "PLSB-6Ok84ZR0Ow4ziNWuFLGTgf3M1JDKT",  # sirkitree
+    "PLa82mLNo3G469kqA5avK5A2bAyycT6BuJ",  # dev tips from Mystic Forge
 ]
