@@ -77,9 +77,9 @@ class Video:
 async def saveVideo(v: Video):
     async with aiosqlite.connect(PATH) as conn:
         await conn.execute(
-            """INSERT INTO videos
-                           VALUES(?, ?, ?, ?, ?, ?, ?)""",
-            v.as_tuple,
+            """INSERT INTO videos VALUES (?, ?, ?, ?, ?, ?, ?) 
+            ON CONFLICT DO NOTHING""",
+            (*v.as_tuple, v.as_tuple),
         )
         await conn.commit()
 
@@ -88,7 +88,11 @@ async def saveManyVideo(videos: List[Video], conn: aiosqlite.Connection = None):
     if not conn:
         conn = await aiosqlite.connect(PATH)
     videoset = set([v.as_tuple for v in videos])
-    await conn.executemany("""INSERT INTO videos VALUES (?,?,?,?,?,?,?)""", videoset)
+    await conn.executemany(
+        """INSERT INTO videos VALUES (?,?,?,?,?,?,?)
+        ON CONFLICT DO NOTHING""",
+        videoset,
+    )
     await conn.commit()
 
 
