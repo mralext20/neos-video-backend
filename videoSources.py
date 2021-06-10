@@ -8,4 +8,5 @@ youtubePlaylists = [
     "PLwitPMCdx0xu2KQ7vwoccaPUp-31qfdjK",  # Turk
     "PLSB-6Ok84ZR0Ow4ziNWuFLGTgf3M1JDKT",  # sirkitree
     "PLa82mLNo3G469kqA5avK5A2bAyycT6BuJ",  # dev tips from Mystic Forge
+    "PLxzYbxVivbzR5z8FQGfXOmOhx7lfnMxFs",  # jiink's neos tutorials
 ]
