@@ -48,7 +48,7 @@ def processVideos(videos: List[db.Video], req: Request):
 
     start = (int(params['page']) - 1) * int(params['pageLength'])
     end = start + int(params['pageLength'])
-    videos = [v.as_tuple for v in videos][start:end]
+    videos = [v.ordered for v in videos][start:end]
 
     if style['format'] == 'neos':
         return text(utils.formatForNeos(videos))

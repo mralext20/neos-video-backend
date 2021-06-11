@@ -73,6 +73,18 @@ class Video:
             self.duration.total_seconds(),
         )
 
+    @property
+    def ordered(self):
+        return (
+            self.title,
+            self.vidId,
+            self.channel,
+            self.description,
+            self.thumbnail,
+            str(self.publishDate.timestamp()),
+            str(self.duration.total_seconds()),
+        )
+
 
 async def saveVideo(v: Video):
     async with aiosqlite.connect(PATH) as conn:
