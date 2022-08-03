@@ -13,4 +13,5 @@ youtubePlaylists = [
     "PLh_pMt0Xa7j8UQJ3fzJMvdTHduACp4jpP",  # Engi
     "PLcc8JSd9S6hFcbbAjBsF10m9qKrswtXRF",  # June
     "PLyxO0VqqoL51yabVq1Y93Asn8oBOyD49C",  # TheBasementNerd
+    "PLpOgr9-294bXmBhhkc3teio9Vc3aGl1Jr",  # SvekenVR 
 ]
