@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from typing import List
 
 import aiohttp
-
 from config import baseurl
 from sanic import Sanic
 from sanic.request import Request
