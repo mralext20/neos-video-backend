@@ -5,6 +5,9 @@ from urllib.parse import quote
 
 _T = TypeVar("_T")
 
+priCacheData = {}
+priCacheDt = None
+
 
 def grouper(iterable: Iterable[_T], n: int) -> Generator[Iterable[_T], None, None]:
     """

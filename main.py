@@ -1,5 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
+
+import aiohttp
 
 from config import baseurl
 from sanic import Sanic
@@ -82,6 +84,20 @@ async def update(request):
     then = datetime.now()
     total = await youtube.update()
     return text(f"Success, took {datetime.now() - then} to retrieve {total} items")
+
+
+@app.route(f"{baseurl}/prioritys")
+async def prioritys(request):
+    """
+    request forwarding service for api.neos.com/api/stats/priorityIssues
+    """
+    # get data from external service if it's been more than an hour since the last time we did this
+    if utils.priCacheDt is None or (datetime.now() - utils.priCacheDt) > timedelta(hours=1):
+        utils.priCacheDt = datetime.now()
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://api.neos.com/api/stats/priorityIssues") as resp:
+                utils.priCacheData = await resp.json()
+    return json(utils.priCacheData)
 
 
 @app.listener("after_server_start")
