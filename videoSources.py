@@ -12,4 +12,5 @@ youtubePlaylists = [
     "PLpwEkiuuwBpACPqbsPKuJOLTQsFz4Q-7C",  # Nicole+
     "PLh_pMt0Xa7j8UQJ3fzJMvdTHduACp4jpP",  # Engi
     "PLcc8JSd9S6hFcbbAjBsF10m9qKrswtXRF",  # June
+    "PLyxO0VqqoL51yabVq1Y93Asn8oBOyD49C",  # TheBasementNerd
 ]
