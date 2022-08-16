@@ -110,7 +110,7 @@ async def saveManyVideo(videos: List[Video], conn: aiosqlite.Connection = None):
 
 async def getAllVideos() -> List[Video]:
     async with aiosqlite.connect(PATH) as conn:
-        res = await conn.execute("SELECT * FROM videos;")
+        res = await conn.execute("SELECT * FROM videos ORDER BY publishDate DESC;")
         return [Video.from_row(row) for row in await res.fetchall()]
 
 
