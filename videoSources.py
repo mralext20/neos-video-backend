@@ -14,4 +14,5 @@ youtubePlaylists = [
     "PLcc8JSd9S6hFcbbAjBsF10m9qKrswtXRF",  # June
     "PLyxO0VqqoL51yabVq1Y93Asn8oBOyD49C",  # TheBasementNerd
     "PLpOgr9-294bXmBhhkc3teio9Vc3aGl1Jr",  # SvekenVR
+    "PL9Cth8_knEuk7PNqsPmL28m9PRjjiMF28",  # amber
 ]
